@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAD — Software Architecture Design | peviitor.ro</title>
+  <meta name="description" content="Software Architecture Design pentru platforma peviitor.ro — motor de căutare locuri de muncă din România">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue-900: #0a2e42;
+      --blue-800: #0f4260;
+      --blue-700: #1a6b8a;
+      --blue-600: #1e7fa3;
+      --blue-500: #2693bc;
+      --blue-400: #4dafd1;
+      --blue-100: #e3f2f9;
+      --blue-50: #f0f8fc;
+      --gray-900: #111827;
+      --gray-800: #1f2937;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-500: #6b7280;
+      --gray-400: #9ca3af;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50: #f9fafb;
+      --white: #ffffff;
+      --green-600: #059669;
+      --green-100: #d1fae5;
+      --amber-600: #d97706;
+      --amber-100: #fef3c7;
+      --red-600: #dc2626;
+      --red-100: #fee2e2;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+    pre, code, .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-700) 50%, var(--blue-600) 100%);
+      color: var(--white);
+      padding: 3rem 1.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      position: relative;
+    }
+    header h1 span { color: var(--blue-400); }
+    header p {
+      font-size: 1.125rem;
+      opacity: 0.85;
+      margin-top: 0.5rem;
+      position: relative;
+    }
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      margin-top: 1rem;
+      position: relative;
+    }
+
+    /* Navigation */
+    nav {
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    nav .inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      gap: 0.25rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    nav .inner::-webkit-scrollbar { display: none; }
+    nav a {
+      display: block;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--gray-600);
+      text-decoration: none;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    nav a:hover, nav a:focus { color: var(--blue-600); border-bottom-color: var(--blue-400); }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* Hero section */
+    .hero {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 2rem;
+    }
+    .hero h2 { font-size: 1.75rem; font-weight: 600; color: var(--blue-800); }
+    .hero p { color: var(--gray-600); max-width: 700px; margin: 0.75rem auto 0; }
+    .hero-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+    .hero-links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .hero-links a.primary { background: var(--blue-600); color: var(--white); }
+    .hero-links a.primary:hover { background: var(--blue-700); }
+    .hero-links a.secondary { background: var(--gray-100); color: var(--gray-700); }
+    .hero-links a.secondary:hover { background: var(--gray-200); }
+
+    /* Sections */
+    section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    section h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--blue-800);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    section h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--gray-800);
+      margin: 1.5rem 0 0.75rem;
+    }
+    section h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin: 1rem 0 0.5rem;
+    }
+    section .body { padding: 1.5rem; }
+    section .body > * + * { margin-top: 1rem; }
+
+    .section-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .section-link:hover { box-shadow: var(--shadow-lg); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin: 0.75rem 0;
+    }
+    thead { background: var(--gray-100); }
+    th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      border-bottom: 2px solid var(--gray-200);
+    }
+    td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: top;
+    }
+    tr:hover td { background: var(--gray-50); }
+    table.compact td, table.compact th { padding: 0.4rem 0.6rem; }
+
+    /* Cards */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      transition: box-shadow 0.15s;
+    }
+    .card:hover { box-shadow: var(--shadow); }
+    .card h4 { margin: 0 0 0.5rem; color: var(--blue-700); }
+    .card p { font-size: 0.875rem; color: var(--gray-600); }
+    .card .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+    }
+    .tag-green { background: var(--green-100); color: var(--green-600); }
+    .tag-amber { background: var(--amber-100); color: var(--amber-600); }
+    .tag-red { background: var(--red-100); color: var(--red-600); }
+    .tag-blue { background: var(--blue-100); color: var(--blue-700); }
+
+    /* Code / Pre */
+    pre {
+      background: var(--gray-900);
+      color: #e5e7eb;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      background: var(--gray-100);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+    pre code { background: none; padding: 0; font-size: inherit; }
+
+    /* Lists */
+    ul, ol { padding-left: 1.5rem; }
+    li { margin: 0.3rem 0; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Status badges */
+    .status { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .status-live { background: var(--green-100); color: var(--green-600); }
+    .status-warn { background: var(--amber-100); color: var(--amber-600); }
+    .status-down { background: var(--red-100); color: var(--red-600); }
+
+    /* KPI grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+    .kpi {
+      text-align: center;
+      padding: 1.25rem;
+      background: var(--blue-50);
+      border-radius: var(--radius);
+    }
+    .kpi .value { font-size: 1.75rem; font-weight: 700; color: var(--blue-700); }
+    .kpi .label { font-size: 0.8rem; color: var(--gray-600); margin-top: 0.25rem; }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      color: var(--gray-500);
+      font-size: 0.875rem;
+      border-top: 1px solid var(--gray-200);
+      margin-top: 2rem;
+    }
+    footer a { color: var(--blue-600); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* Architecture diagram */
+    .arch-diagram {
+      text-align: center;
+      padding: 1rem 0;
+    }
+    .arch-diagram pre {
+      display: inline-block;
+      text-align: left;
+      background: var(--gray-900);
+      color: #e5e7eb;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      header h1 { font-size: 1.75rem; }
+      header { padding: 2rem 1rem; }
+      .container { padding: 1rem; }
+      section .body { padding: 1rem; }
+      section h2 { padding: 1rem; font-size: 1.1rem; }
+      table { font-size: 0.8rem; }
+      th, td { padding: 0.4rem 0.5rem; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Print */
+    @media print {
+      nav { display: none; }
+      header { padding: 1.5rem; }
+      section { break-inside: avoid; box-shadow: none; border: 1px solid var(--gray-200); }
+      .hero-links a { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>SAD<span>.</span>peviitor<span>.ro</span></h1>
+  <p>Software Architecture Design — Documentație Arhitecturală</p>
+  <div class="badge">v1.0 &mdash; Iunie 2026</div>
+</header>
+
+<nav>
+  <div class="inner">
+    <a href="#prezentare">Prezentare</a>
+    <a href="#arhitectura">Arhitectură</a>
+    <a href="#infrastructura">Infrastructură</a>
+    <a href="#api">API</a>
+    <a href="#solr">SOLR</a>
+    <a href="#frontend">Frontend</a>
+    <a href="#decizii">ADR</a>
+    <a href="#testare">Testare</a>
+    <a href="#riscuri">Riscuri</a>
+    <a href="#tehnologii">Tehnologii</a>
+  </div>
+</nav>
+
+<main class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h2>Motor de căutare a locurilor de muncă din România</h2>
+    <p>Platforma agregează joburi din peste <strong>100 de surse</strong> (site-uri de carieră, ANAFM, companii direct) și le pune la dispoziție printr-un search engine full-text alimentat de Apache SOLR, cu un API BFF în PHP și o interfață web în React.</p>
+    <div class="hero-links">
+      <a href="https://peviitor.ro" class="primary" target="_blank" rel="noopener">Platforma Live &rarr;</a>
+      <a href="https://api.peviitor.ro" class="secondary" target="_blank" rel="noopener">API</a>
+      <a href="https://github.com/peviitor-ro" class="secondary" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+
+  <!-- Prezentare generala -->
+  <section id="prezentare">
+    <h2>&#8288;&#9660;&#65039; Prezentare Generală</h2>
+    <div class="body">
+      <div class="grid-2">
+        <div>
+          <h3>Scop</h3>
+          <p>Acest document descrie arhitectura software a platformei <strong>peviitor.ro</strong> — un motor de căutare a locurilor de muncă din România.</p>
+          <h3>Domeniu</h3>
+          <p>Sistemul acoperă: colectarea automată a datelor (scraping), validarea, indexarea full-text în Apache SOLR, expunerea printr-un API BFF și interfața web React.</p>
+        </div>
+        <div>
+          <h3>Componente principale</h3>
+          <table class="compact">
+            <thead><tr><th>Componentă</th><th>URL</th></tr></thead>
+            <tbody>
+              <tr><td>Platforma live</td><td><a href="https://peviitor.ro" target="_blank" rel="noopener">peviitor.ro</a></td></tr>
+              <tr><td>API (BFF)</td><td><a href="https://api.peviitor.ro" target="_blank" rel="noopener">api.peviitor.ro</a></td></tr>
+              <tr><td>SOLR (search)</td><td><a href="https://solr.peviitor.ro" target="_blank" rel="noopener">solr.peviitor.ro</a></td></tr>
+              <tr><td>Admin/Validator</td><td><a href="https://admin.peviitor.ro" target="_blank" rel="noopener">admin.peviitor.ro</a></td></tr>
+              <tr><td>Test</td><td><a href="https://test.peviitor.ro" target="_blank" rel="noopener">test.peviitor.ro</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Arhitectura -->
+  <section id="arhitectura">
+    <h2>&#8288;&#127959;&#65039; Context View (C4 Level 1)</h2>
+    <div class="body">
+      <p>Diagrama de context arată interacțiunile dintre utilizatori, frontend, API, SOLR și scrapere:</p>
+      <div class="arch-diagram">
+<pre>                     +-------------------+
+                     |   Cautator de     |
+                     |   munca (Browser) |
+                     +--------+----------+
+                              |
+                         HTTPS (peviitor.ro)
+                              |
+                     +--------v----------+
+                     |   search-engine   |
+                     |  (React + Vite)   |
+                     +--------+----------+
+                              |
+                      HTTPS (api.peviitor.ro)
+                              |
+                      +--------v----------+
+                      |   API (BFF) v1    |
+                      |  PHP 8.x, RPi 5   |
+                      |    (4GB RAM)      |
+                      +--------+----------+
+                               |
+                     HTTP (192.168.1.x:8983)
+                     Basic Auth (LAN)
+                               |
+                      +--------v----------+
+                      |  Apache SOLR 10.x |
+                      |  RPi 5 (16GB RAM) |
+                      +--------+----------+
+                              ^
+                              |
+               +--------------+--------------+
+               |              |              |
+      +--------v------+ +----v------+ +-----v--------+ +------------------+
+      | Scrapers (Py) | | JMeter    | | ANOFM         | | Scrapers (Node)  |
+      | GitHub Action | | Scraper   | | Scraper       | | JS / TypeScript  |
+      +---------------+ +-----------+ +---------------+ +------------------+</pre>
+      </div>
+      <h3>Stakeholders</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h4>Căutători de locuri de muncă</h4>
+          <p>Interfață rapidă, căutare relevantă, date corecte</p>
+        </div>
+        <div class="card">
+          <h4>Contributori open-source</h4>
+          <p>Scrapers, bug fixes, features</p>
+        </div>
+        <div class="card">
+          <h4>QA Team</h4>
+          <p>Validare date, testare automată</p>
+        </div>
+        <div class="card">
+          <h4>Administrator platformă</h4>
+          <p>Monitorizare, mentenanță, securitate</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Infrastructure -->
+  <section id="infrastructura">
+    <h2>&#8288;&#128421;&#65039; Deployment View</h2>
+    <div class="body">
+      <h3>Infrastructură hardware</h3>
+      <div class="arch-diagram">
+<pre>+-------------------------------------------------------------+
+|                        Acasa / RCS&RDS                       |
+|                                                              |
+  |  +------------------+    +-----------------------+          |
+  |  | Router TP-Link   |    | RPi 5 (4GB) — API     |          |
+  |  | 192.168.1.1      |    | 192.168.1.135         |          |
+  |  | Ethernet 1 Gbps  +----+ Nginx Proxy :80/443   |          |
+  |  | DDNS:            |    | Nginx UI :81          |          |
+  |  | zimbor.go.ro     |    | PHP BFF :8080         |          |
+  |  |                  |    +-----------------------+          |
+|  |                  |    +------------------------+          |
+|  |                  +----+ RPi 5 (16GB) — SOLR    |          |
+|  |                       | 192.168.1.134          |          |
+|  |                       | Docker solr:10-slim    |          |
+|  |                       | SOLR :8983             |          |
+|  +--------+---------+    +------------------------+          |
+|           |                                                   |
++-----------|---------------------------------------------------+
+            | Internet (NAT)
+            |
+    +-------v--------+
+    |  IP Public      |
+     |  86.122.35.88   |
+    +-----------------+
+            |
+    +-------v--------+
+    |  Frontend       |
+    |  (GitHub Pages) |
+    +-----------------+</pre>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <h3>API Server — RPi 5 (4GB)</h3>
+          <table class="compact">
+            <tr><td><strong>Model</strong></td><td>Raspberry Pi 5 Model B Rev 1.0</td></tr>
+            <tr><td><strong>SoC</strong></td><td>Broadcom BCM2712 (Cortex-A76, 4 cores)</td></tr>
+            <tr><td><strong>RAM</strong></td><td>4 GB LPDDR4X</td></tr>
+            <tr><td><strong>Stocare</strong></td><td>microSD 59.4 GB (31 GB liberi)</td></tr>
+            <tr><td><strong>OS</strong></td><td>Debian 12 (Bookworm), kernel 6.12.87</td></tr>
+            <tr><td><strong>Rețea</strong></td><td>eth0: 192.168.1.135/24</td></tr>
+            <tr><td><strong>Docker</strong></td><td>php:8.3-apache (API), orase-api, nginx-proxy-manager</td></tr>
+            <tr><td><strong>Monitoring</strong></td><td>Netdata v2.10.0, solr-monitor (Discord)</td></tr>
+          </table>
+        </div>
+        <div>
+          <h3>SOLR Server — RPi 5 (16GB)</h3>
+          <table class="compact">
+            <tr><td><strong>Model</strong></td><td>Raspberry Pi 5 Model B Rev 1.1</td></tr>
+            <tr><td><strong>CPU</strong></td><td>ARM Cortex-A76, 4 cores @ 2.4 GHz</td></tr>
+            <tr><td><strong>RAM</strong></td><td>16 GB LPDDR4X + 16 GB swap + 2 GB zram</td></tr>
+            <tr><td><strong>Stocare</strong></td><td>microSD 64 GB (33 GB folosiți)</td></tr>
+            <tr><td><strong>OS</strong></td><td>Debian 13 (Trixie), kernel 6.18.29</td></tr>
+            <tr><td><strong>Rețea</strong></td><td>eth0: 192.168.1.134/24</td></tr>
+            <tr><td><strong>Docker</strong></td><td>solr:10-slim (port 8983)</td></tr>
+            <tr><td><strong>Runtime</strong></td><td>Python 3.13.5, Node.js v24.16.0, GCC 14.2.0</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- API -->
+  <section id="api">
+    <h2>&#8288;&#128640; API BFF — api.peviitor.ro</h2>
+    <div class="body">
+      <p>API-ul BFF (Backend for Frontend) este scris în PHP 8.3 și rulează într-un container Docker <code>php:8.3-apache</code> pe portul 8080, expus public prin Nginx Proxy Manager.</p>
+
+      <h3>Endpoint-uri v1</h3>
+      <div class="grid-2">
+        <div>
+          <table class="compact">
+            <thead><tr><th>Endpoint</th><th>Metodă</th><th>Descriere</th></tr></thead>
+            <tbody>
+              <tr><td><code>/v1/search</code></td><td>GET</td><td>Căutare full-text</td></tr>
+              <tr><td><code>/v1/jobs</code></td><td>GET</td><td>Listare joburi</td></tr>
+              <tr><td><code>/v1/companies</code></td><td>GET</td><td>Listare companii</td></tr>
+              <tr><td><code>/v1/company</code></td><td>GET</td><td>Detalii companie</td></tr>
+              <tr><td><code>/v1/total</code></td><td>GET</td><td>Număr total joburi</td></tr>
+              <tr><td><code>/v1/suggest</code></td><td>GET</td><td>Autocomplete sugestii</td></tr>
+              <tr><td><code>/v1/random</code></td><td>GET</td><td>Joburi aleatoare</td></tr>
+              <tr><td><code>/v1/health</code></td><td>GET</td><td>Status sănătate</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <table class="compact">
+            <thead><tr><th>Endpoint</th><th>Metodă</th><th>Descriere</th></tr></thead>
+            <tbody>
+              <tr><td><code>/v1/firme</code></td><td>GET</td><td>Firme</td></tr>
+              <tr><td><code>/v1/add</code></td><td>POST</td><td>Adăugare documente</td></tr>
+              <tr><td><code>/v1/update</code></td><td>PUT</td><td>Actualizare documente</td></tr>
+              <tr><td><code>/v1/cleanjobs</code></td><td>DELETE</td><td>Curățare joburi expirate</td></tr>
+              <tr><td><code>/v1/empty</code></td><td>DELETE</td><td>Golire core</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3>Flux căutare</h3>
+      <ol>
+        <li>Normalizare query (diacritice &rarr; ASCII)</li>
+        <li>Construire SOLR query (edismax, fq, bq, sort)</li>
+        <li>Fetch de la <code>http://192.168.1.134:8983/solr/job/select</code></li>
+        <li>Mapare câmpuri SOLR &rarr; API response</li>
+        <li>Return JSON</li>
+      </ol>
+
+      <h3>Monitorizare</h3>
+      <p>Conexiunea la SOLR se face prin Basic Auth pe LAN. CORS este restricționat la domenii cunoscute. API-ul are integrare Sentry pentru error monitoring.</p>
+      <p>Linkuri utile:</p>
+      <ul>
+        <li><a href="https://github.com/peviitor-ro/api/issues/443" target="_blank" rel="noopener">Performance issue #443</a></li>
+        <li><a href="https://github.com/peviitor-ro/api/issues/452" target="_blank" rel="noopener">Performance issue #452</a></li>
+        <li><a href="https://github.com/peviitor-ro/api/issues/454" target="_blank" rel="noopener">Performance issue #454</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SOLR -->
+  <section id="solr">
+    <h2>&#8288;&#128269; Apache SOLR Index — solr.peviitor.ro</h2>
+    <div class="body">
+      <p>Apache SOLR 10.x rulează în container Docker <code>solr:10-slim</code> pe RPi 5 (16GB), cu autentificare Basic Auth configurată prin <code>security.json</code>.</p>
+
+      <h3>Core: <code>job</code> (locuri de muncă)</h3>
+      <table class="compact">
+        <thead><tr><th>Field</th><th>Tip</th><th>Stocat</th><th>Indexat</th><th>MultiValued</th><th>Required</th></tr></thead>
+        <tbody>
+          <tr><td><code>url</code></td><td>string</td><td>&#10003;</td><td>&#10003;</td><td></td><td><strong>DA (uniqueKey)</strong></td></tr>
+          <tr><td><code>title</code></td><td>text_general</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>company</code></td><td>string</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>cif</code></td><td>string</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>location</code></td><td>text_general</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td></td></tr>
+          <tr><td><code>workmode</code></td><td>string</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>status</code></td><td>string</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>salary</code></td><td>text_general</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>date</code></td><td>pdate</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>vdate</code></td><td>pdate</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>expirationdate</code></td><td>pdate</td><td>&#10003;</td><td>&#10003;</td><td></td><td></td></tr>
+          <tr><td><code>tags</code></td><td>text_general</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Status Flow (Job)</h3>
+      <pre>scraped -> tested -> published
+scraped -> verified -> published</pre>
+      <ul>
+        <li><strong>scraped</strong> — abia colectat, nevalidat</li>
+        <li><strong>tested</strong> — URL funcțional, dar date incomplete</li>
+        <li><strong>verified</strong> — complet, toate câmpurile extrase</li>
+        <li><strong>published</strong> — importat în indexul principal</li>
+      </ul>
+
+      <h3>Validare URL &amp; Expirare</h3>
+      <p>Joburile cu <code>expirationdate &lt; NOW()</code> sunt șterse automat (cron zilnic 02:00). Validarea URL se face prin HEAD requests paralele (max 1000 concurrent) — 404 &rarr; DELETE, conținut invalid &rarr; <code>tested</code>.</p>
+    </div>
+  </section>
+
+  <!-- Frontend -->
+  <section id="frontend">
+    <h2>&#8288;&#127912; Frontend — search-engine (React)</h2>
+    <div class="body">
+      <div class="grid-2">
+        <div>
+          <h3>Tech Stack</h3>
+          <table class="compact">
+            <tr><td>Framework</td><td>React 18</td></tr>
+            <tr><td>State Management</td><td>Redux Toolkit + redux-thunk</td></tr>
+            <tr><td>Routing</td><td>react-router-dom v6</td></tr>
+            <tr><td>Styling</td><td>Tailwind CSS 3 + shadcn/ui (Radix)</td></tr>
+            <tr><td>Build</td><td>Vite 5</td></tr>
+            <tr><td>Monitoring</td><td>Sentry</td></tr>
+            <tr><td>Analytics</td><td>Microsoft Clarity</td></tr>
+            <tr><td>Deploy</td><td>GitHub Pages</td></tr>
+          </table>
+        </div>
+        <div>
+          <h3>Structură src/</h3>
+          <pre>src/
+  components/   -> UI (shadcn/ui + custom)
+  context/      -> React context providers
+  pages/        -> Search, JobDetail, etc.
+  reducers/     -> Redux slices
+  lib/          -> Utility library
+  utils/        -> Helpers
+  assets/       -> Statics (SVG, images)
+  store.js      -> Redux store config
+  App.jsx       -> Root component + routes
+  index.jsx     -> Entry point</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Data Pipeline -->
+  <section>
+    <h2>&#8288;&#128200; Scrapers &amp; Data Pipeline</h2>
+    <div class="body">
+      <div class="arch-diagram">
+<pre>Sursa (site companie)
+    | (Python/Scrapy/JMeter)
+    v
+GitHub Actions (cron zilnic)
+    |
+    v
+Script de upload (upload_to_solr.sh)
+    |
+    v
+SOLR index (job core)
+    |
+    v (cron daily 06:00)
+Validare URL-uri (HEAD requests)
+    |
+    v (cron daily 02:00)
+Stergere joburi expirate (expirationdate &lt; NOW())</pre>
+      </div>
+      <div class="card-grid">
+        <div class="card">
+          <h4>Scrapers</h4>
+          <p>Scriși în Python/Scrapy, NodeJS/JS, sau Apache JMeter. Rulează prin GitHub Actions în repo-uri separate (inclusiv pe conturi externe) pentru paralelism maxim.</p>
+          <span class="tag tag-blue"><a href="https://scraper.peviitor.ro" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">scraper.peviitor.ro</a></span>
+        </div>
+        <div class="card">
+          <h4>Validare Automată</h4>
+          <p>HEAD requests paralele verifică zilnic URL-urile. 404 &rarr; DELETE, conținut invalid &rarr; retestat.</p>
+          <span class="tag tag-green">Cron: 06:00</span>
+        </div>
+        <div class="card">
+          <h4>Curățare Expirate</h4>
+          <p>Joburile cu expirationdate &lt; NOW() sunt șterse automat. Expirare: vdate + max 30 zile.</p>
+          <span class="tag tag-amber">Cron: 02:00</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADR -->
+  <section id="decizii">
+    <h2>&#8288;&#128221; Architectural Decision Records (ADR)</h2>
+    <div class="body">
+      <table>
+        <thead><tr><th>ID</th><th>Decizie</th><th>Rațional</th></tr></thead>
+        <tbody>
+          <tr><td><strong>ADR-001</strong></td><td>SOLR pe RPi 5 (16GB)</td><td>Cost zero, consum mic, suficient pentru ~50k joburi</td></tr>
+          <tr><td><strong>ADR-002</strong></td><td>PHP BFF pe RPi 5 separat (4GB)</td><td>Separarea API de SOLR îmbunătățește securitatea și izolarea</td></tr>
+          <tr><td><strong>ADR-003</strong></td><td>PHP BFF (nu API direct SOLR)</td><td>Izolare, normalizare query/response, Basic Auth ascuns</td></tr>
+          <tr><td><strong>ADR-004</strong></td><td>React + Redux + Vite</td><td>Performanță, ecosistem matur, tooling modern</td></tr>
+          <tr><td><strong>ADR-005</strong></td><td>DDNS zimbor.go.ro</td><td>IP dinamic RCS&RDS; DDNS asigură acces extern</td></tr>
+          <tr><td><strong>ADR-006</strong></td><td>Scrapers în repo-uri separate</td><td>Paralelism, mentenabilitate, contribuții distribuite</td></tr>
+          <tr><td><strong>ADR-007</strong></td><td>edismax + copyField _text_</td><td>Căutare full-text pe multiple câmpuri simultan</td></tr>
+          <tr><td><strong>ADR-008</strong></td><td>Status flow scraped&rarr;verified&rarr;published</td><td>Pipeline de calitate înainte de publicare</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Testare -->
+  <section id="testare">
+    <h2>&#8288;&#128738; Testare</h2>
+    <div class="body">
+      <p>Strategia de testare este definită integral în documentul separat: <a href="https://github.com/peviitor-ro/test_strategy_peviitor-ro/blob/master/Test_Strategy_Peviitor.ro.md" target="_blank" rel="noopener">Test Strategy — peviitor.ro</a>.</p>
+
+      <h3>Arii de testare</h3>
+      <div class="card-grid">
+        <div class="card"><h4>Frontend</h4><p>Testare manuală exploratorie + Playwright E2E + testare vizuală</p></div>
+        <div class="card"><h4>API</h4><p>Validare endpoint-uri în Swagger UI + Postman/Bruno + PHPUnit</p></div>
+        <div class="card"><h4>SOLR Index</h4><p>Conformitate schemă, căutare diacritice, CRUD, facet search</p></div>
+        <div class="card"><h4>Validare date</h4><p>Status flow, câmpuri obligatorii, matching companii</p></div>
+        <div class="card"><h4>Cross-component</h4><p>Integrare Frontend &harr; API &harr; SOLR &harr; Scrapers</p></div>
+        <div class="card"><h4>Non-functional</h4><p>Performanță (P95 &lt; 2s), Securitate (OWASP Top 10), Accesibilitate (WCAG 2.2 AA)</p></div>
+      </div>
+
+      <h3>Medii de testare</h3>
+      <table class="compact">
+        <thead><tr><th>Mediu</th><th>URL</th><th>Scop</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Local</strong></td><td><code>http://localhost:3000</code></td><td>Dezvoltare, unit testing (Docker)</td></tr>
+          <tr><td><strong>Test</strong></td><td><a href="https://test.peviitor.ro" target="_blank" rel="noopener">test.peviitor.ro</a></td><td>Integrare, UAT, regresie</td></tr>
+          <tr><td><strong>Producție</strong></td><td><a href="https://peviitor.ro" target="_blank" rel="noopener">peviitor.ro</a></td><td>Live</td></tr>
+        </tbody>
+      </table>
+
+      <h3>KPI</h3>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="value">&ge;95%</div><div class="label">Test Pass Rate</div></div>
+        <div class="kpi"><div class="value">&ge;80%</div><div class="label">Automation Coverage</div></div>
+        <div class="kpi"><div class="value">&le;3</div><div class="label">Defect Escape Rate / trim.</div></div>
+        <div class="kpi"><div class="value">&lt;2s</div><div class="label">Search Response Time (P95)</div></div>
+      </div>
+
+      <h3>Bug Lifecycle</h3>
+      <pre>[New] &rarr; [Assigned] &rarr; [In Progress] &rarr; [Fixed] &rarr; [Verified] &rarr; [Closed]</pre>
+      <p>Bug severity: S1 (Blocker) &rarr; S4 (Trivial). Triaj zilnic; S1/S2 rezolvate în &lt; 4h.</p>
+
+      <h3>Tool-uri</h3>
+      <p>Playwright, Postman/Bruno, PHPUnit/Jest/Vitest, Apache JMeter, k6, OWASP ZAP, axe DevTools/WAVE, TestLink, GitHub Issues.</p>
+    </div>
+  </section>
+
+  <!-- Riscuri -->
+  <section id="riscuri">
+    <h2>&#8288;&#9888;&#65039; Riscuri și Compromisuri</h2>
+    <div class="body">
+      <table>
+        <thead><tr><th>Risc</th><th>Impact</th><th>Mitigare</th></tr></thead>
+        <tbody>
+          <tr><td>Single point of failure (2 RPi-uri)</td><td>API și/sau SOLR indisponibile</td><td>Backup config; scripturi de restore rapide</td></tr>
+          <tr><td>Stocare microSD</td><td>Fiabilitate redusă, uzură</td><td>Monitoring health; backup zilnic</td></tr>
+          <tr><td>IP dinamic RCS&RDS</td><td>Pierdere conexiune externă</td><td>DDNS cu TTL scăzut; fallback manual</td></tr>
+          <tr><td>Fără replică SOLR</td><td>Pierdere date la defecțiune</td><td>Backup configurabil; rebuild din scrapers</td></tr>
+          <tr><td>Dependență GitHub Actions</td><td>Scrapers nu rulează fără GitHub</td><td>Self-hosted runner ca alternativă</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Tehnologii -->
+  <section id="tehnologii">
+    <h2>&#8288;&#128187; Tehnologii Utilizate</h2>
+    <div class="body">
+      <table>
+        <thead><tr><th>Tehnologie</th><th>Rol</th><th>Versiune</th></tr></thead>
+        <tbody>
+          <tr><td>Apache SOLR</td><td>Search &amp; indexare</td><td>10-slim (Docker)</td></tr>
+          <tr><td>PHP</td><td>API BFF</td><td>8.x</td></tr>
+          <tr><td>React</td><td>Frontend UI</td><td>18.x</td></tr>
+          <tr><td>Redux Toolkit</td><td>State management</td><td>2.x</td></tr>
+          <tr><td>Vite</td><td>Build tool</td><td>5.x</td></tr>
+          <tr><td>Tailwind CSS</td><td>Styling</td><td>3.x</td></tr>
+          <tr><td>shadcn/ui (Radix)</td><td>Componente UI</td><td>-</td></tr>
+          <tr><td>Python / Scrapy</td><td>Web scraping</td><td>3.x</td></tr>
+          <tr><td>Apache JMeter</td><td>Web scraping</td><td>5.x</td></tr>
+          <tr><td>Sentry</td><td>Error monitoring</td><td>-</td></tr>
+          <tr><td>Netdata</td><td>Monitoring infrastructură</td><td>2.10.0</td></tr>
+          <tr><td>Microsoft Clarity</td><td>User analytics</td><td>-</td></tr>
+          <tr><td>Docker</td><td>Containerizare</td><td>-</td></tr>
+          <tr><td>Debian Linux</td><td>OS (RPi)</td><td>12 / 13</td></tr>
+          <tr><td>Nginx / Apache</td><td>Reverse proxy</td><td>-</td></tr>
+          <tr><td>Playwright</td><td>Testare E2E</td><td>-</td></tr>
+          <tr><td>PHPUnit / Jest / Vitest</td><td>Testare unitară</td><td>-</td></tr>
+          <tr><td>k6</td><td>Testare de performanță</td><td>-</td></tr>
+          <tr><td>OWASP ZAP</td><td>Testare de securitate</td><td>-</td></tr>
+          <tr><td>GitHub Actions</td><td>CI/CD, scrapers</td><td>-</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Glosar -->
+  <section>
+    <h2>&#8288;&#128214; Glosar</h2>
+    <div class="body">
+      <table>
+        <thead><tr><th>Termen</th><th>Definiție</th></tr></thead>
+        <tbody>
+          <tr><td><strong>BFF</strong></td><td>Backend for Frontend — API care servește specific unui client (frontend)</td></tr>
+          <tr><td><strong>SOLR</strong></td><td>Platformă de căutare full-text open-source (Apache Lucene)</td></tr>
+          <tr><td><strong>Core</strong></td><td>Index SOLR (echivalentul unui tabel în DB)</td></tr>
+          <tr><td><strong>edismax</strong></td><td>Query parser SOLR care permite boost și câmpuri multiple</td></tr>
+          <tr><td><strong>BFF API</strong></td><td>API-ul PHP (v1) care face proxy între frontend și SOLR</td></tr>
+          <tr><td><strong>Scraper</strong></td><td>Script care extrage automat date de pe site-uri externe</td></tr>
+          <tr><td><strong>DDNS</strong></td><td>Dynamic DNS — serviciu care actualizează DNS-ul pentru IP-uri dinamice</td></tr>
+          <tr><td><strong>CIF/CUI</strong></td><td>Codul de Identificare Fiscală al companiilor din România</td></tr>
+          <tr><td><strong>vdate</strong></td><td>Verified date — data la care un job a fost verificat</td></tr>
+          <tr><td><strong>ANAF</strong></td><td>Agenția Națională de Administrare Fiscală</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>&copy; 2022&ndash;2026 <a href="https://peviitor.ro">peviitor.ro</a> &mdash; Open Source</p>
+  <p style="margin-top:0.25rem;">Document generat pe baza explorării organizației GitHub <a href="https://github.com/peviitor-ro" target="_blank" rel="noopener">peviitor-ro</a></p>
+</footer>
+
+</body>
+</html>
